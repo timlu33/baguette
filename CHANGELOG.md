@@ -11,6 +11,7 @@ For releases prior to this changelog, see the
 ## [Unreleased]
 
 ### Added
+- `baguette serve` streams and drives an Android phone or emulator over adb and the official scrcpy server: live screen, touch, multi-touch, keys, text and Back / Home / Recents in the browser, and `/android/:serial/stream`. → [docs](docs/features/android/README.md)
 - `baguette input` answers `describe_ui`, so one long-lived session can read the screen and act without paying startup per call. On a Maps flow, reads take 0.34 s against 0.77 s one-shot, and taps 0.055 s against 0.25 s. → [docs](docs/features/accessibility/README.md#read-and-act-in-one-session)
 
 ### Changed

@@ -46,6 +46,10 @@ let package = Package(
                 // audit). Resolved at runtime by `PluginRoot`, the same
                 // three-step lookup `WebRoot` uses for the web assets.
                 .copy("Resources/Plugins"),
+                // The official scrcpy server jar (Apache-2.0, Genymobile),
+                // pushed to an Android phone to stream and drive it.
+                // Resolved at runtime by `AndroidResources`.
+                .copy("Resources/Android"),
                 // iOS-Simulator dylib (vendored under `VirtualCamera/`,
                 // built by `VirtualCamera/build.sh` and staged here by
                 // the top-level `build.sh`). `InjectedDylibInstaller`
