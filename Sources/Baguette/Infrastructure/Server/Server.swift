@@ -36,6 +36,8 @@ import NIOCore
 ///   WS   /devices/:udid/companion/video     → companion app video ingest
 ///   WS   /devices/:udid/companion/motion    → companion app attitude ingest
 ///   WS   /devices/:udid/stream?format=      → physical-device mirror frames
+///   GET  /android.json                      → Android phones adb can see
+///   WS   /android/:udid/stream              → Android phone (scrcpy) frames + gestures
 ///   GET  /<file>.{html,js,css}              → static UI asset
 ///
 /// Static UI siblings live at the *root* (e.g. `GET /sim-list.js`)
@@ -76,6 +78,12 @@ struct Server: Sendable {
     let twinScreens: TwinScreens
     let twinPoses: TwinPoses
 
+    /// Android phones reachable through adb, and the scrcpy sessions
+    /// streaming them. Reference types: a session outlives any one
+    /// browser socket and is shared by every viewer of that phone.
+    let androidFleet: AndroidFleet
+    let androidSessions: AndroidSessions
+
     init(
         simulators: any Simulators,
         chromes: any Chromes,
@@ -90,7 +98,8 @@ struct Server: Sendable {
         cameraSessions: CameraSessions = CameraSessions(guestTerminated: { _ in false }),
         devices: LiveDevices = LiveDevices(),
         twinScreens: TwinScreens = TwinScreens(),
-        twinPoses: TwinPoses = TwinPoses()
+        twinPoses: TwinPoses = TwinPoses(),
+        androidFleet: AndroidFleet = AndroidFleet.discover()
     ) {
         self.simulators = simulators
         self.motionSessions = motionSessions
@@ -98,6 +107,8 @@ struct Server: Sendable {
         self.devices = devices
         self.twinScreens = twinScreens
         self.twinPoses = twinPoses
+        self.androidFleet = androidFleet
+        self.androidSessions = AndroidSessions(fleet: androidFleet)
         self.chromes = chromes
         self.models = models
         self.deviceRenderer = deviceRenderer
@@ -185,6 +196,11 @@ struct Server: Sendable {
         registerNotifyRoutes(on: router, rejectUntrustedBrowser: rejectUntrustedBrowser)
         registerDefaultsRoutes(on: router, rejectUntrustedBrowser: rejectUntrustedBrowser)
         registerDeviceTwinRoutes(
+            on: router,
+            rejectUntrustedBrowser: rejectUntrustedBrowser,
+            trustedWebSocketUpgrade: trustedWebSocketUpgrade
+        )
+        registerAndroidRoutes(
             on: router,
             rejectUntrustedBrowser: rejectUntrustedBrowser,
             trustedWebSocketUpgrade: trustedWebSocketUpgrade

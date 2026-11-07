@@ -18,6 +18,7 @@
   const state = {
     devices: [],
     physical: [],   // connected companions from /devices.json
+    android: [],    // phones adb can see, from /android.json
     search: '',
     family: 'iphones',
     runtime: 'all',
@@ -307,6 +308,44 @@
       </table>`;
   }
 
+  // Android phones adb reports. A phone that is plugged in but not
+  // ready (unauthorized, offline) is still listed — with the reason,
+  // because "why can't I open it" is the first question.
+  function renderAndroidSection() {
+    if (!state.android.length) return '';
+    const rows = state.android.map((device) => {
+      const ready = !!device.ready;
+      const chip = ready
+        ? '<span class="asc-sim-dot" style="background:#16a34a"></span>Ready'
+        : `<span class="asc-sim-dot" style="background:#d97706"></span>${escapeHTML(device.state === 'unauthorized' ? 'Unauthorized — accept the prompt on the phone' : device.state)}`;
+      const action = ready
+        ? `<a class="asc-sim-button" href="/android/${encodeURIComponent(device.serial)}">Open</a>`
+        : '';
+      return `
+        <tr>
+          <td>${escapeHTML(device.name)}</td>
+          <td>${chip}</td>
+          <td>${escapeHTML(device.serial)}</td>
+          <td class="asc-sim-actions">${action}</td>
+        </tr>`;
+    }).join('');
+    return `
+      <div class="asc-sim-section-title">Android</div>
+      <table class="asc-sim-table">
+        <thead><tr><th>Name</th><th>State</th><th>Serial</th><th class="asc-sim-actions">Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  async function fetchAndroidDevices() {
+    try {
+      const response = await fetch('/android.json', { cache: 'no-store' });
+      if (!response.ok) return [];
+      const json = await response.json();
+      return json.connected || [];
+    } catch { return []; }
+  }
+
   async function fetchPhysicalDevices() {
     try {
       const response = await fetch('/devices.json', { cache: 'no-store' });
@@ -333,8 +372,8 @@
       : state.error
         ? `<div class="asc-sim-error">${escapeHTML(state.error)}</div>`
         : devices.length
-          ? `${renderSection('Running', running)}${renderPhysicalSection()}${renderSection('Available', available)}`
-          : `${renderPhysicalSection()}<div class="asc-sim-empty">No simulators match these filters.</div>`;
+          ? `${renderSection('Running', running)}${renderPhysicalSection()}${renderAndroidSection()}${renderSection('Available', available)}`
+          : `${renderPhysicalSection()}${renderAndroidSection()}<div class="asc-sim-empty">No simulators match these filters.</div>`;
 
     list.innerHTML = `
       <div class="asc-sim-card">
@@ -387,6 +426,7 @@
     if (initial) render();
     try {
       state.physical = await fetchPhysicalDevices();
+      state.android = await fetchAndroidDevices();
       state.devices = await fetchDevices();
     } catch (error) {
       state.error = error.message || String(error);

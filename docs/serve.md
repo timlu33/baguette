@@ -61,6 +61,10 @@ The server trusts only loopback `Host` / `Origin` values, so a request through a
 | `GET` | `/bakeries.json` | trusted bakeries, pinned commits, install state | [plugins](features/plugins/README.md) |
 | `POST` | `/bakeries/preview`, `/bakeries/install` | read a bakery's menu; install from an already-trusted one | [plugins](features/plugins/README.md) |
 | `GET` `WS` | `/devices.json`, `/devices/:udid/…` | physical-device twin (preview) | [device-twin](features/device-twin/README.md) |
+| `GET` | `/android.json` | Android phones adb lists, or why none | [android](features/android/README.md) |
+| `GET` | `/android/:serial`, `/android/:serial/screenshot.png` | Android page; one PNG | [android](features/android/README.md) |
+| `POST` | `/android/:serial/input` | one gesture envelope → its ack | [android](features/android/README.md#gestures) |
+| `WS` | `/android/:serial/stream?maxSize=&bitrate=&fps=&restart=` | live Android frames + gestures | [android](features/android/README.md#http-and-websocket) |
 | `GET` | `/farm` | device-farm page | [device-farm](features/device-farm/README.md) |
 | `GET` | `/<dir>/:file`, `/:file` | static UI assets from `Resources/Web/` | |
 

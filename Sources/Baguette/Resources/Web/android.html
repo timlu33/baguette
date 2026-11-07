@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Android — Baguette</title>
+<style>
+  :root {
+    --bg:        #0f172a;
+    --panel:     #1e293b;
+    --panel-hi:  #334155;
+    --text:      #e2e8f0;
+    --muted:     #94a3b8;
+    --accent:    #3b82f6;
+    --ok:        #22c55e;
+    --warn:      #f59e0b;
+    --bad:       #ef4444;
+    --radius:    10px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f1f5f9; --panel: #ffffff; --panel-hi: #e2e8f0;
+      --text: #0f172a; --muted: #64748b;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+               font: 400 13px/1.4 -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif; }
+  body { display: flex; flex-direction: column; }
+
+  .bar { display: flex; align-items: center; gap: 16px; padding: 10px 16px;
+         background: var(--panel); border-bottom: 1px solid var(--panel-hi); flex: none; }
+  .bar a { color: var(--muted); text-decoration: none; }
+  .bar a:hover { color: var(--text); }
+  .title { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title small { color: var(--muted); font-weight: 400; margin-left: 8px; }
+  .status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+  .dot.live { background: var(--ok); }
+  .dot.down { background: var(--bad); }
+
+  main { flex: 1; min-height: 0; display: flex; gap: 16px; padding: 16px; justify-content: center; }
+  .stage { position: relative; flex: 0 1 auto; min-width: 0; min-height: 0;
+           display: flex; align-items: center; justify-content: center; }
+  canvas { display: block; max-width: 100%; max-height: calc(100vh - 110px);
+           border-radius: 14px; background: #000; outline: none;
+           box-shadow: 0 0 0 1px var(--panel-hi), 0 12px 40px rgba(0,0,0,.35);
+           touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+  canvas:focus-visible { box-shadow: 0 0 0 2px var(--accent), 0 12px 40px rgba(0,0,0,.35); }
+  canvas[hidden] { display: none; }
+
+  .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+             justify-content: center; gap: 12px; padding: 24px; text-align: center;
+             background: color-mix(in srgb, var(--bg) 78%, transparent); border-radius: 14px; }
+  .overlay[hidden] { display: none; }
+  .overlay p { margin: 0; max-width: 360px; color: var(--muted); }
+  .overlay p.headline { color: var(--text); font-size: 15px; font-weight: 600; }
+  .spinner { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--panel-hi);
+             border-top-color: var(--accent); animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tools { flex: none; width: 188px; display: flex; flex-direction: column; gap: 14px; }
+  .group { background: var(--panel); border-radius: var(--radius); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .group h2 { margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .row { display: flex; gap: 6px; }
+  .row > * { flex: 1; }
+  button, select { font: inherit; color: var(--text); background: var(--panel-hi); border: 0;
+                   border-radius: 8px; padding: 8px 6px; cursor: pointer; }
+  button:hover, select:hover { background: color-mix(in srgb, var(--panel-hi) 80%, var(--accent)); }
+  button:active { transform: translateY(1px); }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button.nav { font-size: 16px; padding: 10px 0; }
+  label { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); }
+  label select { flex: 0 0 96px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 0; }
+  .hint kbd { font: inherit; background: var(--panel-hi); border-radius: 4px; padding: 0 4px; }
+
+  #ime { position: fixed; left: -1000px; top: 0; width: 1px; height: 1px; opacity: 0; }
+
+  @media (max-width: 720px) {
+    main { flex-direction: column; align-items: center; }
+    .tools { width: 100%; max-width: 420px; }
+    canvas { max-height: 60vh; }
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <a href="/simulators">← Devices</a>
+  <div class="title"><span id="name">Android</span><small id="serial"></small></div>
+  <div class="status" aria-live="polite">
+    <span id="dot" class="dot"></span><span id="state">Connecting…</span><span id="fps"></span>
+  </div>
+</header>
+
+<main>
+  <div class="stage">
+    <canvas id="screen" tabindex="0" aria-label="Android screen" hidden></canvas>
+    <div id="overlay" class="overlay" role="status">
+      <div class="spinner" id="spinner"></div>
+      <p class="headline" id="overlayTitle">Starting the stream…</p>
+      <p id="overlayText">The first start pushes the scrcpy server to the phone and takes a few seconds.</p>
+      <button id="retry" hidden>Reconnect</button>
+    </div>
+  </div>
+
+  <aside class="tools">
+    <section class="group">
+      <h2>Navigate</h2>
+      <div class="row">
+        <button class="nav" data-act="back"    title="Back (right-click the screen)">◁</button>
+        <button class="nav" data-act="home"    title="Home (middle-click the screen)">○</button>
+        <button class="nav" data-act="recents" title="Recent apps">□</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>Device</h2>
+      <div class="row">
+        <button data-act="power"      title="Power / lock">Power</button>
+        <button data-act="wake"       title="Wake the screen">Wake</button>
+      </div>
+      <div class="row">
+        <button data-act="volumeDown" title="Volume down">Vol −</button>
+        <button data-act="volumeUp"   title="Volume up">Vol +</button>
+      </div>
+      <div class="row">
+        <button data-act="notifications" title="Pull down the notification shade">Shade</button>
+        <button data-act="settings"      title="Quick settings">Quick</button>
+      </div>
+      <div class="row">
+        <button data-act="rotate" title="Rotate the screen">Rotate</button>
+        <button data-act="collapse" title="Close the shade">Close</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>Capture</h2>
+      <button id="shot">Screenshot</button>
+    </section>
+
+    <section class="group">
+      <h2>Stream</h2>
+      <label>Size
+        <select id="optSize">
+          <option value="0">Native</option>
+          <option value="1920">1920</option>
+          <option value="1600">1600</option>
+          <option value="1280">1280</option>
+          <option value="800">800</option>
+        </select>
+      </label>
+      <label>Bitrate
+        <select id="optRate">
+          <option value="2000000">2 Mbit/s</option>
+          <option value="4000000">4 Mbit/s</option>
+          <option value="8000000">8 Mbit/s</option>
+          <option value="16000000">16 Mbit/s</option>
+        </select>
+      </label>
+      <label>Frame rate
+        <select id="optFps">
+          <option value="30">30 fps</option>
+          <option value="60">60 fps</option>
+          <option value="120">120 fps</option>
+        </select>
+      </label>
+    </section>
+
+    <p class="hint">Click the screen to type. Right-click = Back, middle-click = Home, <kbd>Alt</kbd>-drag = pinch. Paste (<kbd>⌘V</kbd>) sends text, Unicode included.</p>
+  </aside>
+</main>
+
+<input id="ime" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Keyboard capture">
+
+<!-- Absolute paths: this page is served at /android/<serial>, so relative
+     `src`s would resolve under /android/ and be answered with this HTML. -->
+<script src="/frame-decoder.js"></script>
+<script src="/stream-session.js"></script>
+<script src="/android-control.js"></script>
+<script src="/android.js"></script>
+</body>
+</html>

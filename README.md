@@ -106,6 +106,7 @@ Apps that use and support Baguette development:
 | Simulated world | Mac webcam or a file as the camera, GPS and routes, CoreMotion, network conditioning → [camera](docs/features/camera/README.md), [location](docs/features/location/README.md), [motion](docs/features/motion/README.md), [network](docs/features/network/README.md) |
 | Apps & files | Deep links and URL schemes, drag-and-drop app install and Photos → [deep-links](docs/features/deep-links/README.md), [file-upload](docs/features/file-upload/README.md) |
 | Other screens | CarPlay and paired Watch, iPhone Duo and its hinge, a physical iPhone (preview) → [companion-screens](docs/features/companion-screens/README.md), [iphone-duo](docs/features/iphone-duo/README.md), [hinge](docs/features/hinge/README.md), [device-twin](docs/features/device-twin/README.md) |
+| Android | Stream an Android phone or emulator and drive it from the browser over adb and the official scrcpy server → [android](docs/features/android/README.md) |
 | Plugins | Add panels and commands from a trusted bakery; they run as subprocesses → [plugins](docs/features/plugins/README.md) |
 
 ## More

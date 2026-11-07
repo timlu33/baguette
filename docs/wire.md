@@ -148,6 +148,7 @@ These ride the same channels but belong to one feature; their shapes and replies
 | `log_started`, `log`, `log_stopped`, `stop` | logs WS | [logs](features/logs/README.md) |
 | `camera_list`, `camera_start`, `camera_stop`, `camera_set_flags`, `camera_devices`, `camera_state` | camera WS | [camera](features/camera/README.md) |
 | companion `hello` / `format` | `/devices/…` WS | [device-twin](features/device-twin/README.md) |
+| `pointer-down\|move\|up`, `nav`, `text` | `/android/…` stream WS and `POST …/input` | [android](features/android/README.md#gestures) |
 
 ## Known limits
 
